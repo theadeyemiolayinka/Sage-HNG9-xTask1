@@ -51,63 +51,90 @@ def main():
         file_name = args.file[0]
 
     hash_list = []
+    last_team = ''
+    line = 0
 
     with open(file_name, 'r') as f:
         reader = csv.reader(f)
-
+            
         for row in reader:
-            series_number = row[0]
-            filename = row[1]
-            name= row[2]
-            description= row[3]
-            gender = row[4]
-            attributes = row[5]
-            uuid = row[6]
+            line = line + 1
+            if line == 1:
+                continue
+            else:
+                team = row[0]
+                series_number = row[1]
+                filename = row[2]
+                name= row[3]
+                description= row[4]
+                gender = row[5]
+                attributes = row[6]
+                uuid = row[7]
 
-            # nft template
-            nft = {
-                "format": "CHIP-0007",
-                "name": name,
-                "description": description,
-                "minting_tool": "HNG Minting Tool",
-                "sensitive_content": False,
-                "series_number": series_number,
-                "series_total": 420,
-                "attributes": [
+                if team == None or team == '':
+                    team = last_team 
+                else:
+                    team = team
+
+                try:
+                    dic_attr = dict((x.strip(), y.strip())
+                    for x, y in (element.split(':') 
+                    for element in attributes.split('; ')))
+                except:
+                    print('Parse Error for attributes at series number '+ str(series_number))
+
+                fin_attr = [
                     {
                         "trait_type": "gender",
                         "value": gender
                     }
-                ],
-                "collection": {
-                    "name": "Zuri NFT tickets for free lunch",
-                    "id": uuid,
-                    "attributes": [
-                        {
-                            "type": "description",
-                            "value": "Rewards for accomplishments during HNGi9"
-                        }
-                    ]
-                },
-            }
+                ]
 
-            # Create JSON Object
-            with open("output/{}.json".format(filename), 'w') as outfile:
-                json.dump(nft, outfile, indent=4, separators=(", ", ": "))
-                outfile.close()
+                for key in dic_attr:
+                    fin_attr.append({
+                        "trait_type": key,
+                        "value": dic_attr[key]
+                    })
 
-            if filename == "Filename":
-                pass
-            else:
-                with open("output/{}.json".format(filename), "rb") as f:
-                    bytes = f.read()
-                    readable_hash = hashlib.sha256(bytes).hexdigest()
-                    hash_list.append(readable_hash)
-                    f.close()
+                # nft template
+                nft = {
+                    "format": "CHIP-0007",
+                    "name": name,
+                    "description": description,
+                    "minting_tool": team,
+                    "sensitive_content": False,
+                    "series_number": series_number,
+                    "series_total": 420,
+                    "attributes": fin_attr,
+                    "collection": {
+                        "name": "Zuri NFT tickets for free lunch",
+                        "id": uuid,
+                        "attributes": [
+                            {
+                                "type": "description",
+                                "value": "Rewards for accomplishments during HNGi9"
+                            }
+                        ]
+                    },
+                }
+
+                # Create JSON Object
+                with open("output/{}.json".format(filename), 'w') as outfile:
+                    json.dump(nft, outfile, indent=4, separators=(", ", ": "))
+                    outfile.close()
+
+                if filename == "Filename":
+                    pass
+                else:
+                    with open("output/{}.json".format(filename), "rb") as f:
+                        bytes = f.read()
+                        readable_hash = hashlib.sha256(bytes).hexdigest()
+                        hash_list.append(readable_hash)
+                        f.close()
         
         # Add Hash to filename.output.csv
         csv_input = pd.read_csv(file_name)
-        csv_input['Hash'] = hash_list
+        csv_input['HASH'] = hash_list
     
         csv_input.to_csv('filename.output.csv', index=False)
 
